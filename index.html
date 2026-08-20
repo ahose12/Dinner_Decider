@@ -11,6 +11,27 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <section id="authGate" class="auth-gate">
+    <div class="auth-gate-card">
+      <p class="eyebrow dark">Dinner Decider</p>
+      <h1>Sign in to start cooking.</h1>
+      <p class="auth-gate-copy">Create an account or sign in to browse dinners, randomize meals, and use the AI pantry scanner.</p>
+
+      <label for="gateEmail">Email</label>
+      <input id="gateEmail" type="email" autocomplete="email" placeholder="you@example.com" />
+
+      <label for="gatePassword">Password</label>
+      <input id="gatePassword" type="password" autocomplete="current-password" placeholder="At least 6 characters" />
+
+      <div class="auth-gate-actions">
+        <button id="gateSignInBtn" class="button primary" type="button">Sign in</button>
+        <button id="gateSignUpBtn" class="button" type="button">Create account</button>
+      </div>
+      <div id="gateAuthStatus" class="status" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <div id="appShell" hidden>
   <header class="hero">
     <nav class="nav shell">
       <a href="#" class="brand">Dinner Decider</a>
@@ -86,24 +107,10 @@
           <p>Upload clear photos of your pantry, refrigerator, freezer, or countertop. AI will identify visible food and compare it with the dinner database.</p>
 
           <div class="auth-box">
-            <div id="signedOutBox">
-              <strong>Sign in to use AI Pantry Scan</strong>
-              <div class="auth-fields">
-                <input id="authEmail" type="email" autocomplete="email" placeholder="Email" />
-                <input id="authPassword" type="password" autocomplete="current-password" placeholder="Password" />
-              </div>
-              <div class="scan-actions">
-                <button id="signInBtn" class="button primary" type="button">Sign in</button>
-                <button id="signUpBtn" class="button" type="button">Create account</button>
-              </div>
+            <div class="signed-in-row">
+              <span>Signed in as <strong id="signedInEmail"></strong></span>
+              <button id="signOutBtn" class="text-button" type="button">Sign out</button>
             </div>
-            <div id="signedInBox" hidden>
-              <div class="signed-in-row">
-                <span>Signed in as <strong id="signedInEmail"></strong></span>
-                <button id="signOutBtn" class="text-button" type="button">Sign out</button>
-              </div>
-            </div>
-            <div id="authStatus" class="status" aria-live="polite"></div>
           </div>
 
           <label class="upload-box" for="pantryPhotos">
@@ -165,6 +172,8 @@
       <span>Simple meals. Less deciding.</span>
     </div>
   </footer>
+
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="script.js"></script>

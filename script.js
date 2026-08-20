@@ -148,15 +148,15 @@ const MAX_PANTRY_PHOTOS = 4;
 const MAX_IMAGE_SIDE = 1280;
 const JPEG_QUALITY = 0.78;
 
-const authEmail = document.getElementById('authEmail');
-const authPassword = document.getElementById('authPassword');
-const signInBtn = document.getElementById('signInBtn');
-const signUpBtn = document.getElementById('signUpBtn');
+const authGate = document.getElementById('authGate');
+const appShell = document.getElementById('appShell');
+const gateEmail = document.getElementById('gateEmail');
+const gatePassword = document.getElementById('gatePassword');
+const gateSignInBtn = document.getElementById('gateSignInBtn');
+const gateSignUpBtn = document.getElementById('gateSignUpBtn');
+const gateAuthStatus = document.getElementById('gateAuthStatus');
 const signOutBtn = document.getElementById('signOutBtn');
-const signedOutBox = document.getElementById('signedOutBox');
-const signedInBox = document.getElementById('signedInBox');
 const signedInEmail = document.getElementById('signedInEmail');
-const authStatus = document.getElementById('authStatus');
 const pantryPhotos = document.getElementById('pantryPhotos');
 const previewGrid = document.getElementById('previewGrid');
 const scanPantryBtn = document.getElementById('scanPantryBtn');
@@ -167,57 +167,110 @@ const canMakeList = document.getElementById('canMakeList');
 const almostList = document.getElementById('almostList');
 const otherMatches = document.getElementById('otherMatches');
 let pantryFiles = [];
+let currentSession = null;
 
-async function refreshAuthUI() {
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  const signedIn = Boolean(session?.user);
-  signedOutBox.hidden = signedIn;
-  signedInBox.hidden = !signedIn;
-  signedInEmail.textContent = session?.user?.email || '';
-  scanPantryBtn.disabled = !signedIn;
-  if (!signedIn && !pantryStatus.textContent) {
-    pantryStatus.textContent = 'Sign in before scanning pantry photos.';
-  } else if (signedIn && pantryStatus.textContent === 'Sign in before scanning pantry photos.') {
-    pantryStatus.textContent = '';
-  }
-  return session;
+function updateScanButton() {
+  const ready = Boolean(currentSession?.user) && pantryFiles.length > 0;
+  scanPantryBtn.disabled = !ready;
+  scanPantryBtn.title = !currentSession?.user
+    ? 'Sign in first'
+    : pantryFiles.length === 0
+      ? 'Choose at least one pantry photo'
+      : 'Scan pantry ingredients';
 }
 
-signInBtn.addEventListener('click', async () => {
-  authStatus.textContent = 'Signing in…';
+async function refreshAuthUI() {
+  const { data: { session }, error } = await supabaseClient.auth.getSession();
+  if (error) console.error('Session error:', error);
+  currentSession = session || null;
+  const signedIn = Boolean(currentSession?.user);
+
+  authGate.hidden = signedIn;
+  appShell.hidden = !signedIn;
+  signedInEmail.textContent = currentSession?.user?.email || '';
+  updateScanButton();
+
+  return currentSession;
+}
+
+function validateCredentials() {
+  const email = gateEmail.value.trim();
+  const password = gatePassword.value;
+  if (!email) return 'Enter your email address.';
+  if (!password) return 'Enter your password.';
+  if (password.length < 6) return 'Password must be at least 6 characters.';
+  return '';
+}
+
+gateSignInBtn.addEventListener('click', async () => {
+  const problem = validateCredentials();
+  if (problem) { gateAuthStatus.textContent = problem; return; }
+
+  gateSignInBtn.disabled = true;
+  gateSignUpBtn.disabled = true;
+  gateAuthStatus.textContent = 'Signing in…';
+
   const { error } = await supabaseClient.auth.signInWithPassword({
-    email: authEmail.value.trim(),
-    password: authPassword.value
+    email: gateEmail.value.trim(),
+    password: gatePassword.value
   });
-  authStatus.textContent = error ? error.message : 'Signed in.';
-  if (!error) authPassword.value = '';
+
+  if (error) {
+    gateAuthStatus.textContent = error.message;
+  } else {
+    gateAuthStatus.textContent = '';
+    gatePassword.value = '';
+  }
+  gateSignInBtn.disabled = false;
+  gateSignUpBtn.disabled = false;
   await refreshAuthUI();
 });
 
-signUpBtn.addEventListener('click', async () => {
-  authStatus.textContent = 'Creating account…';
+gateSignUpBtn.addEventListener('click', async () => {
+  const problem = validateCredentials();
+  if (problem) { gateAuthStatus.textContent = problem; return; }
+
+  gateSignInBtn.disabled = true;
+  gateSignUpBtn.disabled = true;
+  gateAuthStatus.textContent = 'Creating account…';
+
   const { data, error } = await supabaseClient.auth.signUp({
-    email: authEmail.value.trim(),
-    password: authPassword.value
+    email: gateEmail.value.trim(),
+    password: gatePassword.value
   });
+
   if (error) {
-    authStatus.textContent = error.message;
+    gateAuthStatus.textContent = error.message;
   } else if (data.session) {
-    authStatus.textContent = 'Account created and signed in.';
+    gateAuthStatus.textContent = '';
+    gatePassword.value = '';
   } else {
-    authStatus.textContent = 'Account created. Check your email to confirm, then sign in.';
+    gateAuthStatus.textContent = 'Account created. Check your email to confirm the account, then return here and sign in.';
   }
-  if (!error) authPassword.value = '';
+
+  gateSignInBtn.disabled = false;
+  gateSignUpBtn.disabled = false;
   await refreshAuthUI();
+});
+
+[gateEmail, gatePassword].forEach(input => {
+  input.addEventListener('keydown', event => {
+    if (event.key === 'Enter') gateSignInBtn.click();
+  });
 });
 
 signOutBtn.addEventListener('click', async () => {
   await supabaseClient.auth.signOut();
-  authStatus.textContent = 'Signed out.';
+  pantryFiles = [];
+  pantryPhotos.value = '';
+  previewGrid.innerHTML = '';
+  pantryStatus.textContent = '';
+  gateAuthStatus.textContent = 'Signed out.';
   await refreshAuthUI();
 });
 
-supabaseClient.auth.onAuthStateChange(() => {
+supabaseClient.auth.onAuthStateChange((_event, session) => {
+  currentSession = session || null;
   setTimeout(refreshAuthUI, 0);
 });
 
@@ -375,6 +428,7 @@ pantryPhotos.addEventListener('change', () => {
     pantryStatus.textContent = pantryFiles.length ? `${pantryFiles.length} photo${pantryFiles.length === 1 ? '' : 's'} ready to scan.` : '';
   }
   renderPreviews();
+  updateScanButton();
 });
 
 function resizeImage(file) {
@@ -405,7 +459,7 @@ scanPantryBtn.addEventListener('click', async () => {
     return;
   }
 
-  const { data: { session } } = await supabaseClient.auth.getSession();
+  const session = currentSession || (await supabaseClient.auth.getSession()).data.session;
   if (!session) {
     pantryStatus.textContent = 'Sign in before scanning pantry photos.';
     await refreshAuthUI();
@@ -443,9 +497,8 @@ scanPantryBtn.addEventListener('click', async () => {
   } catch (error) {
     pantryStatus.textContent = `Could not scan pantry: ${error.message}`;
   } finally {
-    const { data: { session: latestSession } } = await supabaseClient.auth.getSession();
-    scanPantryBtn.disabled = !latestSession;
     scanPantryBtn.textContent = '✨ Scan ingredients';
+    updateScanButton();
   }
 });
 
@@ -458,4 +511,5 @@ clearPantryBtn.addEventListener('click', () => {
   canMakeList.innerHTML = '<div class="empty-results">No pantry scan yet.</div>';
   almostList.innerHTML = '<div class="empty-results">Near-matches will appear here.</div>';
   otherMatches.innerHTML = '<div class="empty-results">Other dinner ideas will appear here.</div>';
+  updateScanButton();
 });
