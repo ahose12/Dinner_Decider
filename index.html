@@ -85,6 +85,27 @@
           <h2>Show me what you have.</h2>
           <p>Upload clear photos of your pantry, refrigerator, freezer, or countertop. AI will identify visible food and compare it with the dinner database.</p>
 
+          <div class="auth-box">
+            <div id="signedOutBox">
+              <strong>Sign in to use AI Pantry Scan</strong>
+              <div class="auth-fields">
+                <input id="authEmail" type="email" autocomplete="email" placeholder="Email" />
+                <input id="authPassword" type="password" autocomplete="current-password" placeholder="Password" />
+              </div>
+              <div class="scan-actions">
+                <button id="signInBtn" class="button primary" type="button">Sign in</button>
+                <button id="signUpBtn" class="button" type="button">Create account</button>
+              </div>
+            </div>
+            <div id="signedInBox" hidden>
+              <div class="signed-in-row">
+                <span>Signed in as <strong id="signedInEmail"></strong></span>
+                <button id="signOutBtn" class="text-button" type="button">Sign out</button>
+              </div>
+            </div>
+            <div id="authStatus" class="status" aria-live="polite"></div>
+          </div>
+
           <label class="upload-box" for="pantryPhotos">
             <span class="upload-title">📷 Add pantry photos</span>
             <span class="upload-help">Use 1–4 clear photos. JPEG, PNG, or WebP works best.</span>
@@ -96,7 +117,7 @@
             <button id="clearPantryBtn" class="button" type="button">Clear</button>
           </div>
           <div id="pantryStatus" class="status" aria-live="polite"></div>
-          <p class="endpoint-note">For security, the OpenAI API key belongs in the included Cloudflare Worker—not in this GitHub Pages site.</p>
+          <p class="endpoint-note">For security, the OpenAI API key is stored only as a Supabase Edge Function secret—not in this public GitHub Pages site.</p>
         </div>
 
         <div class="pantry-results">
@@ -145,6 +166,7 @@
     </div>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="script.js"></script>
 </body>
 </html>

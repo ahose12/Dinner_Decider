@@ -138,13 +138,25 @@ categories.forEach(category => {
 
 populateDinnerSelect('Meatloaf & Mashed Potatoes');
 
-// ---------------- AI PANTRY SCANNER ----------------
-// After deploying worker.js, paste its /scan-pantry URL here.
-const AI_PANTRY_ENDPOINT = "https://YOUR-WORKER.workers.dev/scan-pantry";
+// ---------------- SUPABASE + AI PANTRY SCANNER ----------------
+const SUPABASE_URL = "https://inuqosrjpjmoyegmssic.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_aDkDor4mMtUVPqgEkdi7wQ_hmXvUrpe";
+const AI_FUNCTION_NAME = "scan-pantry";
+
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 const MAX_PANTRY_PHOTOS = 4;
 const MAX_IMAGE_SIDE = 1280;
 const JPEG_QUALITY = 0.78;
 
+const authEmail = document.getElementById('authEmail');
+const authPassword = document.getElementById('authPassword');
+const signInBtn = document.getElementById('signInBtn');
+const signUpBtn = document.getElementById('signUpBtn');
+const signOutBtn = document.getElementById('signOutBtn');
+const signedOutBox = document.getElementById('signedOutBox');
+const signedInBox = document.getElementById('signedInBox');
+const signedInEmail = document.getElementById('signedInEmail');
+const authStatus = document.getElementById('authStatus');
 const pantryPhotos = document.getElementById('pantryPhotos');
 const previewGrid = document.getElementById('previewGrid');
 const scanPantryBtn = document.getElementById('scanPantryBtn');
@@ -155,6 +167,61 @@ const canMakeList = document.getElementById('canMakeList');
 const almostList = document.getElementById('almostList');
 const otherMatches = document.getElementById('otherMatches');
 let pantryFiles = [];
+
+async function refreshAuthUI() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  const signedIn = Boolean(session?.user);
+  signedOutBox.hidden = signedIn;
+  signedInBox.hidden = !signedIn;
+  signedInEmail.textContent = session?.user?.email || '';
+  scanPantryBtn.disabled = !signedIn;
+  if (!signedIn && !pantryStatus.textContent) {
+    pantryStatus.textContent = 'Sign in before scanning pantry photos.';
+  } else if (signedIn && pantryStatus.textContent === 'Sign in before scanning pantry photos.') {
+    pantryStatus.textContent = '';
+  }
+  return session;
+}
+
+signInBtn.addEventListener('click', async () => {
+  authStatus.textContent = 'Signing in…';
+  const { error } = await supabaseClient.auth.signInWithPassword({
+    email: authEmail.value.trim(),
+    password: authPassword.value
+  });
+  authStatus.textContent = error ? error.message : 'Signed in.';
+  if (!error) authPassword.value = '';
+  await refreshAuthUI();
+});
+
+signUpBtn.addEventListener('click', async () => {
+  authStatus.textContent = 'Creating account…';
+  const { data, error } = await supabaseClient.auth.signUp({
+    email: authEmail.value.trim(),
+    password: authPassword.value
+  });
+  if (error) {
+    authStatus.textContent = error.message;
+  } else if (data.session) {
+    authStatus.textContent = 'Account created and signed in.';
+  } else {
+    authStatus.textContent = 'Account created. Check your email to confirm, then sign in.';
+  }
+  if (!error) authPassword.value = '';
+  await refreshAuthUI();
+});
+
+signOutBtn.addEventListener('click', async () => {
+  await supabaseClient.auth.signOut();
+  authStatus.textContent = 'Signed out.';
+  await refreshAuthUI();
+});
+
+supabaseClient.auth.onAuthStateChange(() => {
+  setTimeout(refreshAuthUI, 0);
+});
+
+refreshAuthUI();
 
 const ingredientAliases = {
   'ground beef': ['beef mince', 'hamburger meat', 'hamburger'],
@@ -337,31 +404,47 @@ scanPantryBtn.addEventListener('click', async () => {
     pantryStatus.textContent = 'Add at least one pantry or refrigerator photo first.';
     return;
   }
-  if (AI_PANTRY_ENDPOINT.includes('YOUR-WORKER')) {
-    pantryStatus.textContent = 'AI is not connected yet. Deploy worker.js, then paste its URL into script.js.';
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) {
+    pantryStatus.textContent = 'Sign in before scanning pantry photos.';
+    await refreshAuthUI();
     return;
   }
 
   scanPantryBtn.disabled = true;
   scanPantryBtn.textContent = 'Scanning…';
   pantryStatus.textContent = 'Preparing photos and identifying visible ingredients…';
+
   try {
     const images = await Promise.all(pantryFiles.map(resizeImage));
-    const response = await fetch(AI_PANTRY_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ images })
+    const { data, error } = await supabaseClient.functions.invoke(AI_FUNCTION_NAME, {
+      body: { images }
     });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || `Scan failed (${response.status})`);
-    const ingredients = Array.isArray(data.ingredients) ? data.ingredients.filter(Boolean) : [];
+
+    if (error) {
+      let message = error.message || 'Pantry scan failed.';
+      try {
+        const details = await error.context?.json?.();
+        if (details?.error) message = details.error;
+        if (details?.message) message = details.message;
+      } catch (_) {}
+      throw new Error(message);
+    }
+
+    const rawIngredients = Array.isArray(data?.ingredients) ? data.ingredients : [];
+    const ingredients = rawIngredients
+      .map(item => typeof item === 'string' ? item : item?.name)
+      .filter(Boolean);
+
     renderDetected(ingredients);
     renderMatches(ingredients);
     pantryStatus.textContent = `Found ${ingredients.length} visible ingredient${ingredients.length === 1 ? '' : 's'}. Results are estimates—double-check quantities before cooking.`;
   } catch (error) {
     pantryStatus.textContent = `Could not scan pantry: ${error.message}`;
   } finally {
-    scanPantryBtn.disabled = false;
+    const { data: { session: latestSession } } = await supabaseClient.auth.getSession();
+    scanPantryBtn.disabled = !latestSession;
     scanPantryBtn.textContent = '✨ Scan ingredients';
   }
 });

@@ -161,3 +161,11 @@ footer { background: var(--dark); color: white; padding: 28px 0; }
   .preview-grid { grid-template-columns: repeat(2, 1fr); }
   .match-card-top { flex-direction: column; }
 }
+
+
+/* Supabase authentication */
+.auth-box { border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin: 18px 0; background: rgba(255,255,255,.45); }
+.auth-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.auth-fields input { width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 10px; padding: 12px; font: inherit; background: #fff; }
+.signed-in-row { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+@media (max-width: 620px) { .auth-fields { grid-template-columns: 1fr; } }
