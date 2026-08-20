@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#15100d" />
+  <title>Dinner Decider</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="hero">
+    <nav class="nav shell">
+      <a href="#" class="brand">Dinner Decider</a>
+      <div class="nav-links"><a href="#planner" class="nav-link">Find Dinner</a> &nbsp; <a href="#pantry" class="nav-link">Scan Pantry</a></div>
+    </nav>
+
+    <div class="hero-content shell">
+      <p class="eyebrow">No more “what do you want for dinner?”</p>
+      <h1>Pick dinner.<br><span>Know what to buy.</span></h1>
+      <p class="hero-copy">Browse classic American-style dinners, see the ingredients and estimated calories, or let the dinner randomizer decide for you.</p>
+      <div class="hero-actions">
+        <a class="button primary" href="#planner">Browse dinners</a>
+        <button class="button ghost" id="heroRandomize">Surprise me</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="planner" class="shell main-grid">
+    <aside class="controls card">
+      <div>
+        <p class="eyebrow dark">Dinner finder</p>
+        <h2>What sounds good?</h2>
+      </div>
+
+      <label for="categorySelect">Category</label>
+      <select id="categorySelect">
+        <option value="all">All dinners</option>
+      </select>
+
+      <label for="dinnerSelect">Dinner</label>
+      <select id="dinnerSelect"></select>
+
+      <button class="button primary full" id="randomizeBtn">🎲 Pick a random dinner</button>
+
+      <div class="mini-note">
+        <strong>Tip:</strong> Randomizer follows the category you select. Choose “All dinners” for anything-goes mode.
+      </div>
+    </aside>
+
+    <section class="meal card" aria-live="polite">
+      <div class="meal-topline">
+        <span id="mealCategory" class="pill"></span>
+        <span id="mealCalories" class="calories"></span>
+      </div>
+      <h2 id="mealName"></h2>
+      <p id="mealDescription" class="description"></p>
+
+      <div class="divider"></div>
+
+      <div class="ingredients-heading">
+        <div>
+          <p class="eyebrow dark">Shopping list</p>
+          <h3>Ingredients you’ll need</h3>
+        </div>
+        <button class="text-button" id="copyBtn">Copy ingredients</button>
+      </div>
+
+      <ul id="ingredientList" class="ingredients"></ul>
+
+      <div class="nutrition-note">
+        <strong>Calories are estimates per serving.</strong> Actual calories vary by brands, portions, toppings, and preparation.
+      </div>
+    </section>
+  </main>
+
+
+  <section id="pantry" class="pantry shell">
+    <div class="pantry-panel card">
+      <div class="pantry-grid">
+        <div class="pantry-copy">
+          <p class="eyebrow dark">AI pantry scan</p>
+          <h2>Show me what you have.</h2>
+          <p>Upload clear photos of your pantry, refrigerator, freezer, or countertop. AI will identify visible food and compare it with the dinner database.</p>
+
+          <label class="upload-box" for="pantryPhotos">
+            <span class="upload-title">📷 Add pantry photos</span>
+            <span class="upload-help">Use 1–4 clear photos. JPEG, PNG, or WebP works best.</span>
+            <input id="pantryPhotos" type="file" accept="image/jpeg,image/png,image/webp" multiple />
+          </label>
+          <div id="previewGrid" class="preview-grid"></div>
+          <div class="scan-actions">
+            <button id="scanPantryBtn" class="button primary" type="button">✨ Scan ingredients</button>
+            <button id="clearPantryBtn" class="button" type="button">Clear</button>
+          </div>
+          <div id="pantryStatus" class="status" aria-live="polite"></div>
+          <p class="endpoint-note">For security, the OpenAI API key belongs in the included Cloudflare Worker—not in this GitHub Pages site.</p>
+        </div>
+
+        <div class="pantry-results">
+          <div class="detected-wrap">
+            <p class="eyebrow dark">Detected</p>
+            <h3>Ingredients I can see</h3>
+            <div id="detectedIngredients" class="detected-list">
+              <span class="ingredient-chip">Upload photos to begin</span>
+            </div>
+          </div>
+
+          <div class="match-section">
+            <h3>✅ Can make now</h3>
+            <div id="canMakeList" class="match-list"><div class="empty-results">No pantry scan yet.</div></div>
+          </div>
+
+          <div class="match-section">
+            <h3>🛒 Missing only 1–2 items</h3>
+            <div id="almostList" class="match-list"><div class="empty-results">Near-matches will appear here.</div></div>
+          </div>
+
+          <div class="match-section">
+            <h3>🍽️ Other close matches</h3>
+            <div id="otherMatches" class="match-list"><div class="empty-results">Other dinner ideas will appear here.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="browse shell">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow dark">Browse</p>
+        <h2>Popular dinner categories</h2>
+      </div>
+      <p>Tap a category to filter the dinner finder.</p>
+    </div>
+    <div id="categoryCards" class="category-grid"></div>
+  </section>
+
+  <footer>
+    <div class="shell footer-inner">
+      <strong>Dinner Decider</strong>
+      <span>Simple meals. Less deciding.</span>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
